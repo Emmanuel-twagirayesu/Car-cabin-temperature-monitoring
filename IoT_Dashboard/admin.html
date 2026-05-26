@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Smart Car Monitor</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .user-card {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .user-info {
+      flex: 1;
+    }
+    
+    .user-name {
+      font-weight: bold;
+      font-size: 16px;
+      color: #2c3e50;
+    }
+    
+    .user-email {
+      font-size: 12px;
+      color: #7f8c8d;
+      margin-top: 5px;
+    }
+    
+    .access-badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    
+    .access-granted {
+      background: #2ecc71;
+      color: white;
+    }
+    
+    .access-denied {
+      background: #e74c3c;
+      color: white;
+    }
+    
+    .toggle-btn {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+    
+    .toggle-grant {
+      background: #2ecc71;
+      color: white;
+    }
+    
+    .toggle-grant:hover {
+      background: #27ae60;
+    }
+    
+    .toggle-denied {
+      background: #e74c3c;
+      color: white;
+    }
+    
+    .toggle-denied:hover {
+      background: #c0392b;
+    }
+    
+    .section-title {
+      margin: 25px 0 15px 0;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #ecf0f1;
+      color: #2c3e50;
+    }
+    
+    .stats-card {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+    
+    .stat-item {
+      text-align: center;
+    }
+    
+    .stat-number {
+      font-size: 32px;
+      font-weight: bold;
+      color: #3498db;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: #7f8c8d;
+      margin-top: 5px;
+    }
+    
+    .admin-panel {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+    
+    .admin-panel select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0 20px 0;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    
+    .admin-panel label {
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    
+    .table-container {
+      background: white;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ecf0f1;
+    }
+    
+    th {
+      background: #34495e;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="sidebar">
+      <h2>🚗 Smart Car Monitor</h2>
+      <div class="user-info" id="userInfo">
+        <p>Loading...</p>
+      </div>
+      <ul class="nav-links">
+        <li><a href="dashboard.html">📊 Live Dashboard</a></li>
+        <li><a href="logs.html">📋 All Logs</a></li>
+        <li><a href="control.html">🎮 Device Control</a></li>
+        <li><a href="profile.html">👤 My Profile</a></li>
+        <li><a href="admin.html" class="active">⚙️ Admin Panel</a></li>
+      </ul>
+    </div>
+
+    <div class="main-content">
+      <header>
+        <h1>Admin Control Panel</h1>
+        <p>Manage Users, Devices & Access Control</p>
+      </header>
+
+      <div class="stats-card">
+        <div class="stat-item">
+          <div class="stat-number" id="totalUsers">0</div>
+          <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" id="activeUsers">0</div>
+          <div class="stat-label">Active Users</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" id="blockedUsers">0</div>
+          <div class="stat-label">Blocked Users</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" id="totalDevices">0</div>
+          <div class="stat-label">Total Devices</div>
+        </div>
+      </div>
+
+      <h3 class="section-title">👥 User Access Control</h3>
+      <p style="margin-bottom: 15px; color: #7f8c8d;">Toggle access to grant or revoke device control privileges for standard users.</p>
+      <div id="usersList"></div>
+
+      <h3 class="section-title">📱 Device Assignment</h3>
+      <div class="admin-panel">
+        <label>👤 Select User:</label>
+        <select id="usersSelect">
+          <option value="">-- Select User --</option>
+        </select>
+        
+        <label>📟 Select Device:</label>
+        <select id="devicesSelect">
+          <option value="">-- Select Device --</option>
+        </select>
+        
+        <button onclick="assignDevice()" style="width: 100%; margin-top: 10px;">✅ Assign Device</button>
+        
+        <div id="message" style="margin-top: 20px; padding: 10px; border-radius: 8px; display: none;"></div>
+      </div>
+
+      <h3 class="section-title">📋 Current Device Assignments</h3>
+      <div id="assignmentsList" class="table-container">
+        <p style="padding: 20px; text-align: center;">Loading assignments...</p>
+      </div>
+      
+      <h3 class="section-title">📟 All Registered Devices</h3>
+      <div id="devicesList" class="table-container">
+        <p style="padding: 20px; text-align: center;">Loading devices...</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db, auth } from "./firebase.js";
+    import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+      
+      const userSnap = await get(ref(db, `users/${user.uid}`));
+      const userRole = userSnap.val()?.role || "user";
+      
+      const userInfo = document.getElementById("userInfo");
+      userInfo.innerHTML = `<p>📧 ${user.email}</p><p>👤 ${userSnap.val()?.fullName || user.displayName || "User"}</p><p>${userRole === "admin" ? "👑 Admin" : "👤 User"}</p>`;
+      
+      if (userRole !== "admin") {
+        document.querySelector(".main-content").innerHTML = `
+          <header><h1>Access Denied</h1><p>You do not have admin privileges.</p></header>
+          <div class="card"><h3>⚠️ Admin Access Required</h3><p>This page is only accessible to administrators.</p><button onclick="window.location.href='dashboard.html'">Go to Dashboard</button></div>
+        `;
+        return;
+      }
+      
+      loadStatistics();
+      loadUsersWithAccess();
+      loadUsers();
+      loadDevices();
+      loadAssignments();
+      loadAllDevices();
+    });
+
+    async function loadStatistics() {
+      const usersRef = ref(db, "users");
+      const usersSnap = await get(usersRef);
+      
+      let totalUsers = 0;
+      let activeUsers = 0;
+      
+      if (usersSnap.exists()) {
+        const users = usersSnap.val();
+        totalUsers = Object.keys(users).length;
+        
+        for (const uid in users) {
+          if (users[uid].role === "admin") continue;
+          const accessRef = ref(db, `access_control/${uid}`);
+          const accessSnap = await get(accessRef);
+          if (accessSnap.exists() && accessSnap.val().hasAccess === true) {
+            activeUsers++;
+          } else if (!accessSnap.exists()) {
+            activeUsers++;
+          }
+        }
+      }
+      
+      const devicesRef = ref(db, "devices");
+      const devicesSnap = await get(devicesRef);
+      const totalDevices = devicesSnap.exists() ? Object.keys(devicesSnap.val()).length : 0;
+      
+      document.getElementById("totalUsers").textContent = totalUsers;
+      document.getElementById("activeUsers").textContent = activeUsers;
+      document.getElementById("blockedUsers").textContent = totalUsers - activeUsers - 1;
+      document.getElementById("totalDevices").textContent = totalDevices;
+    }
+
+    async function loadUsersWithAccess() {
+      const usersRef = ref(db, "users");
+      const snapshot = await get(usersRef);
+      const usersList = document.getElementById("usersList");
+      
+      usersList.innerHTML = "";
+      
+      if (!snapshot.exists()) {
+        usersList.innerHTML = "<p>No users found.</p>";
+        return;
+      }
+      
+      const users = snapshot.val();
+      const userArray = [];
+      
+      for (const [uid, userData] of Object.entries(users)) {
+        if (userData.role !== "admin") {
+          const accessRef = ref(db, `access_control/${uid}`);
+          const accessSnap = await get(accessRef);
+          const hasAccess = accessSnap.exists() ? accessSnap.val().hasAccess === true : true;
+          
+          userArray.push({
+            uid: uid,
+            fullName: userData.fullName || "Unknown",
+            email: userData.email,
+            hasAccess: hasAccess
+          });
+        }
+      }
+      
+      if (userArray.length === 0) {
+        usersList.innerHTML = "<p>No standard users found.</p>";
+        return;
+      }
+      
+      userArray.forEach(user => {
+        const userCard = document.createElement("div");
+        userCard.className = "user-card";
+        userCard.innerHTML = `
+          <div class="user-info">
+            <div class="user-name">
+              ${user.fullName}
+              <span class="access-badge ${user.hasAccess ? 'access-granted' : 'access-denied'}">
+                ${user.hasAccess ? '✅ Access Granted' : '🔒 Access Denied'}
+              </span>
+            </div>
+            <div class="user-email">${user.email}</div>
+          </div>
+          <div>
+            <button class="toggle-btn ${user.hasAccess ? 'toggle-denied' : 'toggle-grant'}" 
+                    onclick="toggleUserAccess('${user.uid}', ${!user.hasAccess})">
+              ${user.hasAccess ? '🔒 Revoke Access' : '✅ Grant Access'}
+            </button>
+          </div>
+        `;
+        usersList.appendChild(userCard);
+      });
+    }
+
+    window.toggleUserAccess = async function(uid, newStatus) {
+      try {
+        await set(ref(db, `access_control/${uid}`), {
+          hasAccess: newStatus,
+          updatedBy: auth.currentUser.uid,
+          updatedAt: Date.now()
+        });
+        
+        const message = newStatus ? "Access granted successfully!" : "Access revoked successfully!";
+        showMessage(message, "success");
+        
+        loadUsersWithAccess();
+        loadStatistics();
+        
+      } catch (error) {
+        showMessage("Error: " + error.message, "error");
+      }
+    };
+
+    async function loadUsers() {
+      const usersSelect = document.getElementById("usersSelect");
+      usersSelect.innerHTML = '<option value="">Loading users...</option>';
+      
+      const usersRef = ref(db, "users");
+      const snapshot = await get(usersRef);
+      
+      usersSelect.innerHTML = '<option value="">-- Select User --</option>';
+      
+      if (snapshot.exists()) {
+        snapshot.forEach(user => {
+          const userData = user.val();
+          const roleIcon = userData.role === "admin" ? "👑" : "👤";
+          const option = document.createElement("option");
+          option.value = user.key;
+          option.textContent = `${roleIcon} ${userData.fullName || userData.email} (${userData.role || "user"})`;
+          usersSelect.appendChild(option);
+        });
+      } else {
+        usersSelect.innerHTML = '<option value="">No users found.</option>';
+      }
+    }
+
+    async function loadDevices() {
+      const devicesSelect = document.getElementById("devicesSelect");
+      devicesSelect.innerHTML = '<option value="">Loading devices...</option>';
+      
+      const devicesRef = ref(db, "devices");
+      const snapshot = await get(devicesRef);
+      
+      devicesSelect.innerHTML = '<option value="">-- Select Device --</option>';
+      
+      if (snapshot.exists()) {
+        snapshot.forEach(device => {
+          const option = document.createElement("option");
+          option.value = device.key;
+          const lastSeen = device.val().lastSeen;
+          const isOnline = lastSeen && (Date.now() / 1000 - lastSeen) < 60;
+          const statusIcon = isOnline ? "🟢" : "🔴";
+          option.textContent = `${statusIcon} ${device.key}`;
+          devicesSelect.appendChild(option);
+        });
+      } else {
+        devicesSelect.innerHTML = '<option value="">No devices found.</option>';
+      }
+    }
+
+    async function loadAssignments() {
+      const assignmentsRef = ref(db, "assignments");
+      onValue(assignmentsRef, async (snapshot) => {
+        const container = document.getElementById("assignmentsList");
+        
+        if (!snapshot.exists()) {
+          container.innerHTML = '<p style="padding: 20px; text-align: center; color: #999;">No assignments yet</p>';
+          return;
+        }
+        
+        let html = '<table><thead><tr><th>Device ID</th><th>Assigned To</th><th>Assigned At</th></tr></thead><tbody>';
+        
+        for (const [deviceId, data] of Object.entries(snapshot.val())) {
+          const userSnap = await get(ref(db, `users/${data.uid}`));
+          const userName = userSnap.val()?.fullName || userSnap.val()?.email || "Unknown";
+          const assignedDate = data.assignedAt ? new Date(data.assignedAt).toLocaleString() : "Unknown";
+          
+          html += `<tr><td><strong>${deviceId}</strong></td><td>${userName}</td><td>${assignedDate}</td></tr>`;
+        }
+        
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      });
+    }
+    
+    async function loadAllDevices() {
+      const devicesRef = ref(db, "devices");
+      onValue(devicesRef, (snapshot) => {
+        const container = document.getElementById("devicesList");
+        
+        if (!snapshot.exists()) {
+          container.innerHTML = '<p style="padding: 20px; text-align: center; color: #999;">No devices registered yet</p>';
+          return;
+        }
+        
+        let html = '<table><thead><tr><th>Device ID</th><th>Status</th><th>Last Seen</th></tr></thead><tbody>';
+        
+        snapshot.forEach(device => {
+          const deviceId = device.key;
+          const deviceData = device.val();
+          const lastSeen = deviceData.lastSeen;
+          const isOnline = lastSeen && (Date.now() / 1000 - lastSeen) < 60;
+          const statusIcon = isOnline ? "🟢 Online" : "🔴 Offline";
+          const lastSeenStr = lastSeen ? new Date(lastSeen * 1000).toLocaleString() : "Never";
+          
+          html += `<tr><td><strong>${deviceId}</strong></td><td>${statusIcon}</td><td>${lastSeenStr}</td></tr>`;
+        });
+        
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      });
+    }
+
+    window.assignDevice = async function() {
+      const uid = document.getElementById("usersSelect").value;
+      const device = document.getElementById("devicesSelect").value;
+      const messageDiv = document.getElementById("message");
+      
+      if (!uid || !device) {
+        messageDiv.style.display = "block";
+        messageDiv.style.background = "#e74c3c";
+        messageDiv.style.color = "white";
+        messageDiv.innerHTML = "❌ Please select both a user and a device";
+        setTimeout(() => messageDiv.style.display = "none", 3000);
+        return;
+      }
+      
+      try {
+        await set(ref(db, `assignments/${device}`), {
+          uid: uid,
+          assignedAt: Date.now()
+        });
+        
+        messageDiv.style.display = "block";
+        messageDiv.style.background = "#2ecc71";
+        messageDiv.style.color = "white";
+        messageDiv.innerHTML = `✅ Device ${device} assigned successfully!`;
+        
+        setTimeout(() => messageDiv.style.display = "none", 3000);
+        loadAssignments();
+        
+      } catch (err) {
+        messageDiv.style.display = "block";
+        messageDiv.style.background = "#e74c3c";
+        messageDiv.style.color = "white";
+        messageDiv.innerHTML = `❌ Error: ${err.message}`;
+        setTimeout(() => messageDiv.style.display = "none", 3000);
+      }
+    };
+    
+    function showMessage(message, type) {
+      const messageDiv = document.getElementById("message");
+      messageDiv.style.display = "block";
+      messageDiv.style.background = type === "success" ? "#2ecc71" : "#e74c3c";
+      messageDiv.style.color = "white";
+      messageDiv.innerHTML = message;
+      setTimeout(() => messageDiv.style.display = "none", 3000);
+    }
+  </script>
+</body>
+</html>

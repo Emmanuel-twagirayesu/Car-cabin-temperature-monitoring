@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Smart Car Monitor</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .auth-container {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    .auth-container h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #2c3e50;
+    }
+    
+    .auth-container input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    
+    .auth-container button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 20px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    
+    .auth-container button:hover {
+      background: #2980b9;
+    }
+    
+    .auth-link {
+      text-align: center;
+      margin-top: 20px;
+      color: #7f8c8d;
+    }
+    
+    .auth-link a {
+      color: #3498db;
+      text-decoration: none;
+    }
+    
+    .error-message {
+      background: #e74c3c;
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 10px;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <h2>🔐 Smart Car Monitor Login</h2>
+    <div id="errorMsg" class="error-message"></div>
+    <input type="email" id="email" placeholder="Email Address">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <div class="auth-link">
+      Don't have an account? <a href="register.html">Register</a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAHeN_fylzenZiANfd_RphzsqBuxjif3sY",
+      authDomain: "temp-hum-c4be4.firebaseapp.com",
+      databaseURL: "https://temp-hum-c4be4-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "temp-hum-c4be4",
+      storageBucket: "temp-hum-c4be4.firebasestorage.app",
+      messagingSenderId: "788419887651",
+      appId: "1:788419887651:web:1713c9f2595c539c04a796"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    window.login = async function() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const errorDiv = document.getElementById("errorMsg");
+      
+      errorDiv.style.display = "none";
+
+      if (!email || !password) {
+        errorDiv.innerText = "Please fill all fields";
+        errorDiv.style.display = "block";
+        return;
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        window.location.href = "dashboard.html";
+      } catch (error) {
+        errorDiv.innerText = error.message;
+        errorDiv.style.display = "block";
+      }
+    };
+  </script>
+</body>
+</html>

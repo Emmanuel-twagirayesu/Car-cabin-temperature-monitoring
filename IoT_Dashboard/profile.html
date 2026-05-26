@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile - Smart Car Monitor</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .profile-container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    
+    .profile-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      border-radius: 20px;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      background: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 48px;
+      color: #667eea;
+    }
+    
+    .profile-name {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    
+    .profile-email {
+      opacity: 0.9;
+      margin-bottom: 10px;
+    }
+    
+    .access-status {
+      display: inline-block;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
+    .access-granted {
+      background: #2ecc71;
+      color: white;
+    }
+    
+    .access-denied {
+      background: #e74c3c;
+      color: white;
+    }
+    
+    .profile-section {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+    
+    .profile-section h3 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #ecf0f1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    
+    .info-item {
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 10px;
+    }
+    
+    .info-label {
+      font-weight: bold;
+      color: #7f8c8d;
+      font-size: 11px;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    
+    .info-value {
+      font-size: 16px;
+      color: #2c3e50;
+      word-break: break-all;
+    }
+    
+    .edit-btn {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 10px 25px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+    
+    .edit-btn:hover {
+      background: #2980b9;
+    }
+    
+    .save-btn {
+      background: #2ecc71;
+      color: white;
+      border: none;
+      padding: 10px 25px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    
+    .cancel-btn {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 10px 25px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    
+    .edit-field {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    
+    .edit-field:focus {
+      outline: none;
+      border-color: #3498db;
+    }
+    
+    .logout-btn {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+      width: 100%;
+      margin-top: 20px;
+    }
+    
+    .logout-btn:hover {
+      background: #c0392b;
+      transform: scale(1.02);
+    }
+    
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      border-radius: 10px;
+      color: white;
+      animation: slideIn 0.3s ease;
+      z-index: 1000;
+    }
+    
+    .toast-success { background: #2ecc71; }
+    .toast-error { background: #e74c3c; }
+    .toast-info { background: #3498db; }
+    
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    .academic-badge {
+      background: #3498db;
+      color: white;
+      padding: 3px 10px;
+      border-radius: 15px;
+      font-size: 10px;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="sidebar">
+      <h2>🚗 Smart Car Monitor</h2>
+      <div class="user-info" id="userInfo">
+        <p>Loading...</p>
+      </div>
+      <ul class="nav-links">
+        <li><a href="dashboard.html">📊 Live Dashboard</a></li>
+        <li><a href="logs.html">📋 All Logs</a></li>
+        <li><a href="control.html">🎮 Device Control</a></li>
+        <li><a href="profile.html" class="active">👤 My Profile</a></li>
+        <li id="adminLink" style="display:none;"><a href="admin.html">⚙️ Admin Panel</a></li>
+      </ul>
+    </div>
+
+    <div class="main-content">
+      <div class="profile-container">
+        <div class="profile-header">
+          <div class="profile-avatar" id="avatar">👤</div>
+          <div class="profile-name" id="displayName">Loading...</div>
+          <div class="profile-email" id="userEmail">Loading...</div>
+          <div id="accessStatusBadge"></div>
+        </div>
+        
+        <div class="profile-section">
+          <h3>📋 Personal Information</h3>
+          <div id="personalInfo" class="info-grid"></div>
+          <button class="edit-btn" onclick="editPersonalInfo()">✏️ Edit Personal Information</button>
+        </div>
+        
+        <div class="profile-section">
+          <h3>🎓 Academic Information <span class="academic-badge">RP Student</span></h3>
+          <div id="academicInfo" class="info-grid"></div>
+          <button class="edit-btn" onclick="editAcademicInfo()">✏️ Edit Academic Information</button>
+        </div>
+        
+        <div class="profile-section">
+          <h3>📞 Contact Information</h3>
+          <div id="contactInfo" class="info-grid"></div>
+          <button class="edit-btn" onclick="editContactInfo()">✏️ Edit Contact Information</button>
+        </div>
+        
+        <div class="profile-section">
+          <h3>🔐 Account Information</h3>
+          <div id="accountInfo" class="info-grid"></div>
+        </div>
+        
+        <!-- LOGOUT BUTTON - ONLY HERE -->
+        <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db, auth } from "./firebase.js";
+    import { ref, get, update } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+    import { onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+    let currentUser = null;
+    let userData = null;
+    let userAccess = true;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+      
+      currentUser = user;
+      
+      const userSnap = await get(ref(db, `users/${user.uid}`));
+      userData = userSnap.val() || {};
+      
+      const accessSnap = await get(ref(db, `access_control/${user.uid}`));
+      userAccess = accessSnap.exists() ? accessSnap.val().hasAccess === true : true;
+      
+      const role = userData.role || "user";
+      
+      const userInfo = document.getElementById("userInfo");
+      userInfo.innerHTML = `<p>📧 ${user.email}</p><p>👤 ${userData.fullName || user.displayName || "User"}</p><p>${role === "admin" ? "👑 Admin" : "👤 User"}</p>`;
+      
+      if (role === "admin") {
+        document.getElementById("adminLink").style.display = "block";
+      }
+      
+      loadProfile(user, userData);
+    });
+
+    window.logout = async function() {
+      await signOut(auth);
+      window.location.href = "login.html";
+    };
+
+    function loadProfile(user, data) {
+      document.getElementById("displayName").textContent = data.fullName || user.displayName || "User";
+      document.getElementById("userEmail").textContent = user.email;
+      
+      const avatarText = (data.fullName || user.displayName || "U").charAt(0).toUpperCase();
+      document.getElementById("avatar").textContent = avatarText;
+      
+      const accessBadge = document.getElementById("accessStatusBadge");
+      if (data.role !== "admin") {
+        accessBadge.innerHTML = userAccess ? 
+          '<span class="access-status access-granted">✅ Device Control: Active</span>' : 
+          '<span class="access-status access-denied">🔒 Device Control: Restricted - Contact Admin</span>';
+      } else {
+        accessBadge.innerHTML = '<span class="access-status access-granted">👑 Administrator - Full Access</span>';
+      }
+      
+      // Personal Information
+      const personalInfo = document.getElementById("personalInfo");
+      personalInfo.innerHTML = `
+        <div class="info-item">
+          <div class="info-label">Full Name</div>
+          <div class="info-value" id="fullName">${data.fullName || user.displayName || "Not set"}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Email Address</div>
+          <div class="info-value">${user.email}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">User ID</div>
+          <div class="info-value">${user.uid.substring(0, 20)}...</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Member Since</div>
+          <div class="info-value">${data.createdAt ? new Date(data.createdAt).toLocaleDateString() : "N/A"}</div>
+        </div>
+      `;
+      
+      // Academic Information
+      const academicInfo = document.getElementById("academicInfo");
+      academicInfo.innerHTML = `
+        <div class="info-item">
+          <div class="info-label">Registration Number</div>
+          <div class="info-value" id="registrationNumber">${data.registrationNumber || "Not set"}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Index Number</div>
+          <div class="info-value" id="indexNumber">${data.indexNumber || "Not set"}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">National ID</div>
+          <div class="info-value" id="nationalId">${data.nationalId || "Not set"}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">College</div>
+          <div class="info-value" id="college">${data.college || "Not set"}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Department</div>
+          <div class="info-value" id="department">${data.department || "Not set"}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Program</div>
+          <div class="info-value" id="program">${data.program || "Not set"}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Sponsorship</div>
+          <div class="info-value" id="sponsorship">${data.sponsorship || "Not set"}</div>
+        </div>
+      `;
+      
+      // Contact Information
+      const contactInfo = document.getElementById("contactInfo");
+      contactInfo.innerHTML = `
+        <div class="info-item">
+          <div class="info-label">Phone Number</div>
+          <div class="info-value" id="phone">${data.phone || "Not set"}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Address</div>
+          <div class="info-value" id="address">${data.address || "Not set"}</div>
+        </div>
+      `;
+      
+      // Account Information
+      const accountInfo = document.getElementById("accountInfo");
+      accountInfo.innerHTML = `
+        <div class="info-item">
+          <div class="info-label">Account Role</div>
+          <div class="info-value">${data.role === "admin" ? "👑 Administrator" : "👤 Standard User"}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Device Control Access</div>
+          <div class="info-value">${data.role === "admin" ? "Full Access" : (userAccess ? "✅ Active" : "🔒 Restricted")}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Last Login</div>
+          <div class="info-value">${new Date().toLocaleString()}</div>
+        </div>
+      `;
+    }
+    
+    window.editPersonalInfo = function() {
+      const fullName = document.getElementById("fullName").innerText;
+      
+      const html = `
+        <div class="info-item" style="grid-column: span 2;">
+          <div class="info-label">Full Name</div>
+          <input type="text" id="editFullName" class="edit-field" value="${fullName !== "Not set" ? fullName : ""}" placeholder="Enter your full name">
+        </div>
+        <div style="grid-column: span 2; margin-top: 15px;">
+          <button class="save-btn" onclick="savePersonalInfo()">💾 Save Changes</button>
+          <button class="cancel-btn" onclick="cancelEdit()">❌ Cancel</button>
+        </div>
+      `;
+      
+      document.getElementById("personalInfo").innerHTML = html;
+    };
+    
+    window.savePersonalInfo = async function() {
+      const newFullName = document.getElementById("editFullName").value;
+      
+      if (!newFullName) {
+        showToast("Please enter your full name", "error");
+        return;
+      }
+      
+      try {
+        await update(ref(db, `users/${currentUser.uid}`), { fullName: newFullName });
+        await updateProfile(currentUser, { displayName: newFullName });
+        
+        showToast("Personal information updated successfully!", "success");
+        
+        const userSnap = await get(ref(db, `users/${currentUser.uid}`));
+        loadProfile(currentUser, userSnap.val());
+        
+      } catch (error) {
+        showToast("Error updating: " + error.message, "error");
+      }
+    };
+    
+    window.editAcademicInfo = function() {
+      const fields = {
+        registrationNumber: document.getElementById("registrationNumber").innerText,
+        indexNumber: document.getElementById("indexNumber").innerText,
+        nationalId: document.getElementById("nationalId").innerText,
+        college: document.getElementById("college").innerText,
+        department: document.getElementById("department").innerText,
+        program: document.getElementById("program").innerText,
+        sponsorship: document.getElementById("sponsorship").innerText
+      };
+      
+      const html = `
+        <div class="info-item">
+          <div class="info-label">Registration Number</div>
+          <input type="text" id="editRegistrationNumber" class="edit-field" value="${fields.registrationNumber !== "Not set" ? fields.registrationNumber : ""}" placeholder="e.g., 25RP18466">
+        </div>
+        <div class="info-item">
+          <div class="info-label">Index Number</div>
+          <input type="text" id="editIndexNumber" class="edit-field" value="${fields.indexNumber !== "Not set" ? fields.indexNumber : ""}" placeholder="e.g., 21RP03809">
+        </div>
+        <div class="info-item">
+          <div class="info-label">National ID</div>
+          <input type="text" id="editNationalId" class="edit-field" value="${fields.nationalId !== "Not set" ? fields.nationalId : ""}" placeholder="Enter National ID">
+        </div>
+        <div class="info-item">
+          <div class="info-label">College</div>
+          <input type="text" id="editCollege" class="edit-field" value="${fields.college !== "Not set" ? fields.college : ""}" placeholder="e.g., Tumba College">
+        </div>
+        <div class="info-item">
+          <div class="info-label">Department</div>
+          <input type="text" id="editDepartment" class="edit-field" value="${fields.department !== "Not set" ? fields.department : ""}" placeholder="e.g., Electrical Engineering">
+        </div>
+        <div class="info-item">
+          <div class="info-label">Program</div>
+          <input type="text" id="editProgram" class="edit-field" value="${fields.program !== "Not set" ? fields.program : ""}" placeholder="Your program">
+        </div>
+        <div class="info-item">
+          <div class="info-label">Sponsorship</div>
+          <input type="text" id="editSponsorship" class="edit-field" value="${fields.sponsorship !== "Not set" ? fields.sponsorship : ""}" placeholder="e.g., Government">
+        </div>
+        <div style="grid-column: span 2; margin-top: 15px;">
+          <button class="save-btn" onclick="saveAcademicInfo()">💾 Save Changes</button>
+          <button class="cancel-btn" onclick="cancelEdit()">❌ Cancel</button>
+        </div>
+      `;
+      
+      document.getElementById("academicInfo").innerHTML = html;
+    };
+    
+    window.saveAcademicInfo = async function() {
+      const updates = {
+        registrationNumber: document.getElementById("editRegistrationNumber").value,
+        indexNumber: document.getElementById("editIndexNumber").value,
+        nationalId: document.getElementById("editNationalId").value,
+        college: document.getElementById("editCollege").value,
+        department: document.getElementById("editDepartment").value,
+        program: document.getElementById("editProgram").value,
+        sponsorship: document.getElementById("editSponsorship").value
+      };
+      
+      try {
+        await update(ref(db, `users/${currentUser.uid}`), updates);
+        showToast("Academic information updated successfully!", "success");
+        
+        const userSnap = await get(ref(db, `users/${currentUser.uid}`));
+        loadProfile(currentUser, userSnap.val());
+        
+      } catch (error) {
+        showToast("Error updating: " + error.message, "error");
+      }
+    };
+    
+    window.editContactInfo = function() {
+      const phone = document.getElementById("phone").innerText;
+      const address = document.getElementById("address").innerText;
+      
+      const html = `
+        <div class="info-item">
+          <div class="info-label">Phone Number</div>
+          <input type="tel" id="editPhone" class="edit-field" value="${phone !== "Not set" ? phone : ""}" placeholder="e.g., +250 788 123 456">
+        </div>
+        <div class="info-item">
+          <div class="info-label">Address</div>
+          <input type="text" id="editAddress" class="edit-field" value="${address !== "Not set" ? address : ""}" placeholder="Your address">
+        </div>
+        <div style="grid-column: span 2; margin-top: 15px;">
+          <button class="save-btn" onclick="saveContactInfo()">💾 Save Changes</button>
+          <button class="cancel-btn" onclick="cancelEdit()">❌ Cancel</button>
+        </div>
+      `;
+      
+      document.getElementById("contactInfo").innerHTML = html;
+    };
+    
+    window.saveContactInfo = async function() {
+      const updates = {
+        phone: document.getElementById("editPhone").value,
+        address: document.getElementById("editAddress").value
+      };
+      
+      try {
+        await update(ref(db, `users/${currentUser.uid}`), updates);
+        showToast("Contact information updated successfully!", "success");
+        
+        const userSnap = await get(ref(db, `users/${currentUser.uid}`));
+        loadProfile(currentUser, userSnap.val());
+        
+      } catch (error) {
+        showToast("Error updating: " + error.message, "error");
+      }
+    };
+    
+    window.cancelEdit = function() {
+      loadProfile(currentUser, userData);
+    };
+    
+    function showToast(message, type) {
+      const toast = document.createElement("div");
+      toast.className = `toast toast-${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

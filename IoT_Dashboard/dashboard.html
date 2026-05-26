@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Smart Car Monitor</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <div class="sidebar">
+      <h2>🚗 Smart Car Monitor</h2>
+      <div class="user-info" id="userInfo">
+        <p>Loading...</p>
+      </div>
+      <ul class="nav-links">
+        <li><a href="dashboard.html" class="active">📊 Live Dashboard</a></li>
+        <li><a href="logs.html">📋 All Logs</a></li>
+        <li><a href="control.html">🎮 Device Control</a></li>
+        <li><a href="profile.html">👤 My Profile</a></li>
+        <li id="adminLink" style="display:none;"><a href="admin.html">⚙️ Admin Panel</a></li>
+      </ul>
+    </div>
+
+    <div class="main-content">
+      <header>
+        <h1>Live Monitoring Dashboard</h1>
+        <p>Real-time Temperature & Humidity from ESP8266</p>
+      </header>
+
+      <div id="devicesContainer"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db, auth } from "./firebase.js";
+    import { ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+    let currentUserRole = "user";
+    let allDevicesList = [];
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+      
+      const userSnap = await get(ref(db, `users/${user.uid}`));
+      currentUserRole = userSnap.val()?.role || "user";
+      
+      const userInfo = document.getElementById("userInfo");
+      const roleBadge = currentUserRole === "admin" ? "👑 Admin" : "👤 User";
+      userInfo.innerHTML = `<p>📧 ${user.email}</p><p>👤 ${userSnap.val()?.fullName || user.displayName || "User"}</p><p>${roleBadge}</p>`;
+      
+      if (currentUserRole === "admin") {
+        document.getElementById("adminLink").style.display = "block";
+      }
+      
+      await loadDevicesByRole(user.uid);
+    });
+
+    async function loadDevicesByRole(uid) {
+      const container = document.getElementById("devicesContainer");
+      container.innerHTML = "<p style='text-align:center;'>Loading devices...</p>";
+      
+      if (currentUserRole === "admin") {
+        const devicesRef = ref(db, "devices");
+        const devicesSnap = await get(devicesRef);
+        
+        allDevicesList = [];
+        if (devicesSnap.exists()) {
+          devicesSnap.forEach(device => {
+            allDevicesList.push(device.key);
+          });
+        }
+        
+        if (allDevicesList.length === 0) {
+          container.innerHTML = `<div class="card"><h3>⚠️ No Devices Found</h3><p>No ESP8266 devices have sent data to Firebase yet.</p></div>`;
+          return;
+        }
+        
+        container.innerHTML = `
+          <div class="device-selector">
+            <label>🔍 Select Device to Monitor:</label>
+            <select id="deviceSelect" onchange="switchDevice()">
+              <option value="">-- Select a device --</option>
+              ${allDevicesList.map(d => `<option value="${d}">📟 ${d}</option>`).join('')}
+            </select>
+            <span class="admin-badge">👑 Admin can view all devices</span>
+          </div>
+          <div id="deviceDashboard"></div>
+        `;
+        
+        window.switchDevice = function() {
+          const selectedDevice = document.getElementById("deviceSelect").value;
+          if (selectedDevice) {
+            createDeviceDashboard(selectedDevice, document.getElementById("deviceDashboard"));
+          }
+        };
+        
+      } else {
+        const assignmentsRef = ref(db, "assignments");
+        const assignmentsSnap = await get(assignmentsRef);
+        
+        const userDevices = [];
+        
+        if (assignmentsSnap.exists()) {
+          assignmentsSnap.forEach(assignment => {
+            const assignmentData = assignment.val();
+            if (assignmentData.uid === uid) {
+              userDevices.push(assignment.key);
+            }
+          });
+        }
+        
+        if (userDevices.length === 0) {
+          container.innerHTML = `<div class="card"><h3>⚠️ No Devices Assigned</h3><p>No devices have been assigned to your account yet. Please contact your administrator.</p></div>`;
+          return;
+        }
+        
+        container.innerHTML = "";
+        
+        for (const deviceId of userDevices) {
+          await createDeviceDashboard(deviceId, container);
+        }
+      }
+    }
+    
+    async function createDeviceDashboard(deviceId, container) {
+      if (currentUserRole === "admin" && container.id === "deviceDashboard") {
+        container.innerHTML = "";
+      }
+      
+      const deviceSection = document.createElement("div");
+      deviceSection.style.marginBottom = "40px";
+      deviceSection.id = `device-${deviceId}`;
+      deviceSection.innerHTML = `
+        <h2 style="margin-bottom: 20px;">📟 Device: ${deviceId}</h2>
+        <div class="cards">
+          <div class="card">
+            <h3>Temperature</h3>
+            <div class="temp-value" id="temp-${deviceId}">-- °C</div>
+          </div>
+          <div class="card">
+            <h3>Humidity</h3>
+            <div class="hum-value" id="hum-${deviceId}">-- %</div>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat-box"><strong>Max Temp</strong><br><span id="maxTemp-${deviceId}">--</span> °C</div>
+          <div class="stat-box"><strong>Min Temp</strong><br><span id="minTemp-${deviceId}">--</span> °C</div>
+          <div class="stat-box"><strong>Avg Temp</strong><br><span id="avgTemp-${deviceId}">--</span> °C</div>
+          <div class="stat-box"><strong>Status</strong><br><span id="status-${deviceId}">--</span></div>
+        </div>
+        <div class="chart-container">
+          <canvas id="chart-${deviceId}"></canvas>
+        </div>
+      `;
+      
+      container.appendChild(deviceSection);
+      
+      const ctx = document.getElementById(`chart-${deviceId}`).getContext("2d");
+      let chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: [],
+          datasets: [
+            { label: "Temperature (°C)", data: [], borderColor: "#e74c3c", backgroundColor: "rgba(231, 76, 60, 0.1)", tension: 0.3, fill: true },
+            { label: "Humidity (%)", data: [], borderColor: "#3498db", backgroundColor: "rgba(52, 152, 219, 0.1)", tension: 0.3, fill: true, yAxisID: "y1" }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          scales: { y: { title: { display: true, text: "Temperature (°C)" } }, y1: { position: "right", title: { display: true, text: "Humidity (%)" } } }
+        }
+      });
+      
+      const deviceRef = ref(db, `devices/${deviceId}`);
+      onValue(deviceRef, (snap) => {
+        if (snap.exists()) {
+          const lastSeen = snap.val().lastSeen;
+          const now = Date.now() / 1000;
+          const isOnline = (now - lastSeen) < 60;
+          const statusSpan = document.getElementById(`status-${deviceId}`);
+          if (statusSpan) {
+            statusSpan.innerHTML = isOnline ? '<span class="status-badge status-online">● Online</span>' : '<span class="status-badge status-offline">● Offline</span>';
+          }
+        }
+      });
+      
+      const logsRef = ref(db, `logs/${deviceId}`);
+      onValue(logsRef, (snapshot) => {
+        if (!snapshot.exists()) return;
+        
+        const temps = [], hums = [], timestamps = [];
+        
+        snapshot.forEach(child => {
+          const data = child.val();
+          temps.push(data.temperature);
+          hums.push(data.humidity);
+          timestamps.push(new Date(parseInt(child.key) * 1000).toLocaleTimeString());
+        });
+        
+        if (temps.length === 0) return;
+        
+        const latestTemp = temps[temps.length - 1];
+        const latestHum = hums[hums.length - 1];
+        const tempElement = document.getElementById(`temp-${deviceId}`);
+        const humElement = document.getElementById(`hum-${deviceId}`);
+        
+        if (tempElement) tempElement.innerHTML = `${latestTemp?.toFixed(1) || "--"} °C`;
+        if (humElement) humElement.innerHTML = `${latestHum?.toFixed(1) || "--"} %`;
+        
+        const maxTemp = Math.max(...temps);
+        const minTemp = Math.min(...temps);
+        const avgTemp = temps.reduce((a, b) => a + b, 0) / temps.length;
+        
+        const maxTempEl = document.getElementById(`maxTemp-${deviceId}`);
+        const minTempEl = document.getElementById(`minTemp-${deviceId}`);
+        const avgTempEl = document.getElementById(`avgTemp-${deviceId}`);
+        
+        if (maxTempEl) maxTempEl.innerHTML = maxTemp?.toFixed(1) || "--";
+        if (minTempEl) minTempEl.innerHTML = minTemp?.toFixed(1) || "--";
+        if (avgTempEl) avgTempEl.innerHTML = avgTemp?.toFixed(1) || "--";
+        
+        const last30 = Math.min(30, temps.length);
+        chart.data.labels = timestamps.slice(-last30);
+        chart.data.datasets[0].data = temps.slice(-last30);
+        chart.data.datasets[1].data = hums.slice(-last30);
+        chart.update();
+      });
+    }
+  </script>
+</body>
+</html>

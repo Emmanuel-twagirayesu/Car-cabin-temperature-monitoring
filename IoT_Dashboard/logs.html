@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logs - Smart Car Monitor</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .device-filter {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+    .device-filter select {
+      padding: 12px 20px;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 300px;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="sidebar">
+      <h2>🚗 Smart Car Monitor</h2>
+      <div class="user-info" id="userInfo">
+        <p>Loading...</p>
+      </div>
+      <ul class="nav-links">
+        <li><a href="dashboard.html">📊 Live Dashboard</a></li>
+        <li><a href="logs.html" class="active">📋 All Logs</a></li>
+        <li><a href="control.html">🎮 Device Control</a></li>
+        <li><a href="profile.html">👤 My Profile</a></li>
+        <li id="adminLink" style="display:none;"><a href="admin.html">⚙️ Admin Panel</a></li>
+      </ul>
+    </div>
+
+    <div class="main-content">
+      <header>
+        <h1>Historical Sensor Logs</h1>
+        <p>Complete history with search and sort</p>
+      </header>
+
+      <div id="deviceFilterContainer"></div>
+      
+      <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search logs by temperature, humidity, or timestamp...">
+
+      <div class="table-container">
+        <table id="logsTable">
+          <thead>
+            <tr><th onclick="sortTable(0)">Timestamp ▼</th><th onclick="sortTable(1)">Device ID</th><th onclick="sortTable(2)">Temperature (°C)</th><th onclick="sortTable(3)">Humidity (%)</th></tr>
+          </thead>
+          <tbody id="logsBody"><tr><td colspan="4" style="text-align:center;">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db, auth } from "./firebase.js";
+    import { ref, get } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+    let allLogs = [];
+    let currentUserRole = "user";
+    let currentUserDevices = [];
+    let allDevicesList = [];
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+      
+      const userSnap = await get(ref(db, `users/${user.uid}`));
+      currentUserRole = userSnap.val()?.role || "user";
+      
+      const userInfo = document.getElementById("userInfo");
+      const roleBadge = currentUserRole === "admin" ? "👑 Admin" : "👤 User";
+      userInfo.innerHTML = `<p>📧 ${user.email}</p><p>👤 ${userSnap.val()?.fullName || user.displayName || "User"}</p><p>${roleBadge}</p>`;
+      
+      if (currentUserRole === "admin") {
+        document.getElementById("adminLink").style.display = "block";
+      }
+      
+      await loadAvailableDevices(user.uid);
+    });
+
+    async function loadAvailableDevices(uid) {
+      if (currentUserRole === "admin") {
+        const devicesRef = ref(db, "devices");
+        const devicesSnap = await get(devicesRef);
+        
+        allDevicesList = [];
+        if (devicesSnap.exists()) {
+          devicesSnap.forEach(device => { allDevicesList.push(device.key); });
+        }
+        
+        const filterContainer = document.getElementById("deviceFilterContainer");
+        filterContainer.innerHTML = `
+          <div class="device-filter">
+            <label>🔍 Filter by Device:</label>
+            <select id="deviceFilter" onchange="filterByDevice()">
+              <option value="all">📟 All Devices (${allDevicesList.length})</option>
+              ${allDevicesList.map(d => `<option value="${d}">📟 ${d}</option>`).join('')}
+            </select>
+            <span class="admin-badge">👑 Admin can view all devices</span>
+          </div>
+        `;
+        
+        window.filterByDevice = function() { loadLogs(); };
+        
+      } else {
+        const assignmentsRef = ref(db, "assignments");
+        const assignmentsSnap = await get(assignmentsRef);
+        
+        currentUserDevices = [];
+        if (assignmentsSnap.exists()) {
+          assignmentsSnap.forEach(assignment => {
+            if (assignment.val().uid === uid) {
+              currentUserDevices.push(assignment.key);
+            }
+          });
+        }
+        
+        if (currentUserDevices.length === 0) {
+          document.getElementById("logsBody").innerHTML = '<tr><td colspan="4" style="text-align:center;">No devices assigned to you</td><tr>';
+          return;
+        }
+      }
+      
+      await loadLogs();
+    }
+
+    async function loadLogs() {
+      allLogs = [];
+      
+      let devicesToLoad = [];
+      
+      if (currentUserRole === "admin") {
+        const selectedDevice = document.getElementById("deviceFilter")?.value || "all";
+        devicesToLoad = selectedDevice === "all" ? allDevicesList : [selectedDevice];
+      } else {
+        devicesToLoad = currentUserDevices;
+      }
+      
+      if (devicesToLoad.length === 0) {
+        document.getElementById("logsBody").innerHTML = '<tr><td colspan="4" style="text-align:center;">No devices available</td></tr>';
+        return;
+      }
+      
+      document.getElementById("logsBody").innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading logs...</td></tr>';
+      
+      for (const deviceId of devicesToLoad) {
+        const logsRef = ref(db, `logs/${deviceId}`);
+        const snapshot = await get(logsRef);
+        
+        if (snapshot.exists()) {
+          snapshot.forEach(log => {
+            const data = log.val();
+            allLogs.push({
+              timestamp: parseInt(log.key),
+              deviceId: deviceId,
+              temperature: data.temperature,
+              humidity: data.humidity,
+              date: new Date(parseInt(log.key) * 1000)
+            });
+          });
+        }
+      }
+      
+      allLogs.sort((a, b) => b.timestamp - a.timestamp);
+      renderTable(allLogs);
+    }
+
+    function renderTable(logs) {
+      const tbody = document.getElementById("logsBody");
+      const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+      
+      const filtered = logs.filter(log => 
+        log.deviceId.toLowerCase().includes(searchTerm) ||
+        log.temperature.toString().includes(searchTerm) ||
+        log.humidity.toString().includes(searchTerm) ||
+        log.date.toLocaleString().toLowerCase().includes(searchTerm)
+      );
+      
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No logs found</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = filtered.map(log => `
+        <tr>
+          <td>${log.date.toLocaleString()}</td>
+          <td><strong>${log.deviceId}</strong></td>
+          <td><span style="color:#e74c3c; font-weight:bold;">${log.temperature.toFixed(1)}</span> °C</td>
+          <td><span style="color:#3498db; font-weight:bold;">${log.humidity.toFixed(1)}</span> %</td>
+         </tr>
+      `).join('');
+    }
+
+    window.sortTable = function(col) {
+      if (col === 0) allLogs.sort((a, b) => b.timestamp - a.timestamp);
+      if (col === 1) allLogs.sort((a, b) => a.deviceId.localeCompare(b.deviceId));
+      if (col === 2) allLogs.sort((a, b) => b.temperature - a.temperature);
+      if (col === 3) allLogs.sort((a, b) => b.humidity - a.humidity);
+      renderTable(allLogs);
+    };
+
+    document.getElementById("searchInput").addEventListener("keyup", () => renderTable(allLogs));
+  </script>
+</body>
+</html>
