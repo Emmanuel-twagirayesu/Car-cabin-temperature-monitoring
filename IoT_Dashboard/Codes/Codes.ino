@@ -209,7 +209,7 @@ void sendToFirebase(float temperature, float humidity) {
   delay(100);
   String timePath = String(FIREBASE_URL) + "/devices/" + device_id + "/lastSeen.json";
   http.begin(timePath);
-  http.put(String(timestamp));
+  http.PUT(String(timestamp));
   http.end();
   
   Serial.println("✅ Device status updated");
